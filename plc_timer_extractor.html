@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>B&amp;R PLC Timer Extractor</title>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 30px 20px;
+      color: #1e2a38;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .header {
+      background: #4472C4;
+      color: white;
+      padding: 22px 28px;
+    }
+
+    .header h1 {
+      margin: 0 0 4px 0;
+      font-size: 22px;
+      font-weight: bold;
+      letter-spacing: 0.3px;
+    }
+
+    .header p {
+      margin: 0;
+      font-size: 13px;
+      opacity: 0.85;
+    }
+
+    .body {
+      padding: 24px 28px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: #2e4070;
+    }
+
+    textarea {
+      width: 100%;
+      height: 260px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 12px;
+      padding: 10px 12px;
+      border: 1px solid #c5cfe0;
+      border-radius: 5px;
+      resize: vertical;
+      background: #fafcff;
+      color: #222;
+      line-height: 1.5;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #4472C4;
+      box-shadow: 0 0 0 3px rgba(68,114,196,0.15);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: none;
+      padding: 9px 22px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      font-weight: bold;
+      transition: background 0.15s, transform 0.05s;
+    }
+
+    .btn:active { transform: translateY(1px); }
+
+    .btn-primary   { background: #4472C4; color: #fff; }
+    .btn-primary:hover { background: #2e5ba0; }
+
+    .btn-success   { background: #217346; color: #fff; }
+    .btn-success:hover { background: #165a34; }
+    .btn-success:disabled { background: #9ec8af; cursor: default; transform: none; }
+
+    .btn-clear     { background: #e8edf5; color: #555; }
+    .btn-clear:hover { background: #d0d8ea; }
+
+    .status {
+      margin-top: 14px;
+      padding: 9px 14px;
+      border-radius: 4px;
+      font-size: 13px;
+      display: none;
+    }
+
+    .status.info    { display: block; background: #dce6f1; color: #1a3a5c; border-left: 4px solid #4472C4; }
+    .status.success { display: block; background: #e8f5e9; color: #1b5e20; border-left: 4px solid #217346; }
+    .status.error   { display: block; background: #fce4ec; color: #b71c1c; border-left: 4px solid #e53935; }
+
+    .preview-section {
+      margin-top: 22px;
+      display: none;
+    }
+
+    .preview-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .preview-header h2 {
+      font-size: 15px;
+      margin: 0;
+      color: #1e2a38;
+    }
+
+    .badge {
+      background: #4472C4;
+      color: white;
+      font-size: 11px;
+      font-weight: bold;
+      padding: 2px 9px;
+      border-radius: 12px;
+    }
+
+    .table-wrap {
+      border: 1px solid #c5cfe0;
+      border-radius: 5px;
+      overflow: hidden;
+      max-height: 380px;
+      overflow-y: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead th {
+      background: #4472C4;
+      color: white;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      padding: 9px 14px;
+      text-align: left;
+      position: sticky;
+      top: 0;
+    }
+
+    tbody tr:nth-child(even) td { background: #dce6f1; }
+    tbody tr:nth-child(odd)  td { background: #ffffff; }
+
+    tbody tr:hover td { background: #c5d6ef; }
+
+    tbody td {
+      padding: 6px 14px;
+      border-bottom: 1px solid #e8edf5;
+      font-family: Arial, sans-serif;
+    }
+
+    tbody td:first-child { font-weight: bold; color: #2e5ba0; width: 90px; }
+    tbody td:last-child  { width: 90px; }
+
+    .pattern-hint {
+      margin-top: 18px;
+      padding: 10px 14px;
+      background: #f5f8ff;
+      border: 1px solid #dce6f1;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #555;
+    }
+
+    .pattern-hint code {
+      background: #e8edf5;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>B&amp;R PLC Timer Extractor</h1>
+    <p>Parse Structured Text code and export timer settings to a formatted Excel spreadsheet</p>
+  </div>
+
+  <div class="body">
+
+    <label for="plcCode">Paste Structured Text Code</label>
+    <textarea id="plcCode" spellcheck="false"
+      placeholder="Paste your B&R PLC Structured Text code here...&#10;&#10;Example:&#10;PV_xgetadr(ADR('::R101:CycleTime'),&#10;    tmr_int := 1500;"></textarea>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="parsePLC()">Parse Code</button>
+      <button class="btn btn-success" id="downloadBtn" onclick="downloadExcel()" disabled>Download .xlsx</button>
+      <button class="btn btn-clear" onclick="clearAll()">Clear</button>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="preview-section" id="previewSection">
+      <div class="preview-header">
+        <h2>Preview</h2>
+        <span class="badge" id="rowCount">0 rows</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ref_type</th>
+              <th>ref_id</th>
+              <th>variable</th>
+              <th>value</th>
+            </tr>
+          </thead>
+          <tbody id="previewBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="pattern-hint">
+      <strong>Expected pattern:</strong>
+      <code>PV_xgetadr(ADR('::RXXX:VariableName'),</code> followed by <code>tmr_int := VALUE;</code>
+      &nbsp;&mdash;&nbsp; Entries containing <code>StrokeArray</code> are skipped automatically.
+    </div>
+
+  </div>
+</div>
+
+<script>
+  let parsedData = [];
+
+  function setStatus(msg, type) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = 'status ' + type;
+  }
+
+  function parsePLC() {
+    const code = document.getElementById('plcCode').value;
+    if (!code.trim()) {
+      setStatus('Please paste some PLC code first.', 'error');
+      return;
+    }
+
+    const lines = code.split('\n');
+    parsedData = [];
+    let skipped = 0;
+    let noTmr = 0;
+
+    // Regex: match PV_xgetadr(ADR('::RXXX:VarName') allowing optional whitespace
+    const adrRe  = /PV_xgetadr\s*\(\s*ADR\s*\(\s*'::R(\d+):([^']+)'\s*\)/;
+    const tmrRe  = /tmr_int\s*:=\s*(\d+)\s*;/;
+
+    for (let i = 0; i < lines.length; i++) {
+      const adrMatch = lines[i].match(adrRe);
+      if (!adrMatch) continue;
+
+      const refId    = parseInt(adrMatch[1], 10);
+      const variable = adrMatch[2].trim();
+
+      if (variable.includes('StrokeArray')) {
+        skipped++;
+        continue;
+      }
+
+      // Search the next 1-5 lines for tmr_int assignment
+      let tmrValue = null;
+      for (let j = i + 1; j <= Math.min(i + 5, lines.length - 1); j++) {
+        const tmrMatch = lines[j].match(tmrRe);
+        if (tmrMatch) {
+          tmrValue = parseInt(tmrMatch[1], 10);
+          break;
+        }
+      }
+
+      if (tmrValue !== null) {
+        parsedData.push({ ref_type: 'Rail', ref_id: refId, variable, value: tmrValue });
+      } else {
+        noTmr++;
+      }
+    }
+
+    // Render preview table
+    const tbody = document.getElementById('previewBody');
+    tbody.innerHTML = '';
+    parsedData.forEach(row => {
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        `<td>${row.ref_type}</td>` +
+        `<td>${row.ref_id}</td>` +
+        `<td>${escapeHtml(row.variable)}</td>` +
+        `<td>${row.value}</td>`;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('rowCount').textContent = parsedData.length + ' row' + (parsedData.length !== 1 ? 's' : '');
+    document.getElementById('previewSection').style.display = 'block';
+    document.getElementById('downloadBtn').disabled = parsedData.length === 0;
+
+    if (parsedData.length === 0) {
+      setStatus('No timer entries found. Verify the code matches the expected pattern.', 'error');
+    } else {
+      let msg = `Parsed ${parsedData.length} timer entr${parsedData.length !== 1 ? 'ies' : 'y'}.`;
+      if (skipped > 0) msg += ` Skipped ${skipped} StrokeArray entr${skipped !== 1 ? 'ies' : 'y'}.`;
+      if (noTmr  > 0) msg += ` ${noTmr} ADR block${noTmr !== 1 ? 's' : ''} had no tmr_int and were ignored.`;
+      setStatus(msg, 'success');
+    }
+  }
+
+  async function downloadExcel() {
+    if (!parsedData.length) return;
+
+    document.getElementById('downloadBtn').disabled = true;
+    setStatus('Generating Excel file...', 'info');
+
+    try {
+      const wb    = new ExcelJS.Workbook();
+      wb.creator  = 'B&R PLC Timer Extractor';
+      wb.created  = new Date();
+      const ws    = wb.addWorksheet('Timer Settings');
+
+      // Column definitions
+      ws.columns = [
+        { key: 'ref_type', header: 'ref_type',  width: 12 },
+        { key: 'ref_id',   header: 'ref_id',    width: 12 },
+        { key: 'variable', header: 'variable',  width: 45 },
+        { key: 'value',    header: 'value',     width: 12 },
+      ];
+
+      // Header row styling
+      const headerRow = ws.getRow(1);
+      headerRow.height = 20;
+      headerRow.eachCell(cell => {
+        cell.value = cell.value; // keep header text set by column definition
+        cell.font      = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+        cell.alignment = { vertical: 'middle', horizontal: 'left' };
+        cell.border    = { bottom: { style: 'medium', color: { argb: 'FF2E5BA0' } } };
+      });
+
+      // Data rows
+      parsedData.forEach((row, idx) => {
+        const r  = ws.addRow([row.ref_type, row.ref_id, row.variable, row.value]);
+        r.height = 16;
+        const bg = (idx % 2 === 0) ? 'FFFFFFFF' : 'FFDCE6F1'; // white / light blue
+        r.eachCell(cell => {
+          cell.font      = { name: 'Arial', size: 10 };
+          cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+          cell.alignment = { vertical: 'middle' };
+          cell.border    = { bottom: { style: 'thin', color: { argb: 'FFE0E7F0' } } };
+        });
+      });
+
+      // Add autofilter on header row
+      ws.autoFilter = { from: 'A1', to: 'D1' };
+
+      // Freeze header row
+      ws.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
+
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob   = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      saveAs(blob, 'plc_timers.xlsx');
+      setStatus(`Downloaded plc_timers.xlsx — ${parsedData.length} rows exported.`, 'success');
+    } catch (err) {
+      setStatus('Error generating Excel file: ' + err.message, 'error');
+      console.error(err);
+    } finally {
+      document.getElementById('downloadBtn').disabled = false;
+    }
+  }
+
+  function clearAll() {
+    document.getElementById('plcCode').value       = '';
+    document.getElementById('previewBody').innerHTML = '';
+    document.getElementById('previewSection').style.display = 'none';
+    document.getElementById('downloadBtn').disabled = true;
+    document.getElementById('status').className     = 'status';
+    document.getElementById('status').textContent   = '';
+    document.getElementById('rowCount').textContent = '0 rows';
+    parsedData = [];
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
+</body>
+</html>
